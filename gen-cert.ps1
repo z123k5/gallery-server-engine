@@ -1,4 +1,5 @@
 echo "Generating certificate"
+mkdir ./cert
 openssl genrsa -out ./cert/private.key 2048
 
 echo "Generating certificate request"
