@@ -1,0 +1,6 @@
+[submodule "Taiyi-CLIP-Roberta-large-326M-Chinese"]
+	path = Taiyi-CLIP-Roberta-large-326M-Chinese
+	url = git@hf.co:IDEA-CCNL/Taiyi-CLIP-Roberta-large-326M-Chinese
+[submodule "clip-vit-large-patch14"]
+	path = clip-vit-large-patch14
+	url = git@hf.co:openai/clip-vit-large-patch14
