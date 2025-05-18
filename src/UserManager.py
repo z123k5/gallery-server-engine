@@ -1,25 +1,29 @@
 from datetime import datetime, timedelta, timezone
 from typing import Optional, Union
+import os, sys
+sys.path.append("./src")
 
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
-from src.models import UserScheme
+from models import UserScheme
 from pydantic import BaseModel
 import hashlib
-import os
 from jose import JWTError, jwt
-import src.Database as Database
+from .Database import db_executor
 
 
 # User model
 class User(BaseModel):
-    username: str
+    id: int
+    name: str
     email: Union[str, None] = None
-    full_name: Union[str, None] = None
-    disabled: Union[bool, None] = None
+    active: Union[bool, None] = None
+    is_audited: Union[bool, None] = None
+    is_admin: Union[bool, None] = None
     token_expire: Union[datetime, None] = None
+    upload_limit_a_day: Union[int, None] = None
 
 
 class UserInDB(User):
@@ -71,11 +75,11 @@ def decode_token(token: str = Depends(oauth2_scheme)):
         )
 
 # Get user from db
-def get_user(sub: str = Depends(decode_token), db: Session = Depends(Database.get_db)):
+def get_user(sub: str = Depends(decode_token)):
     # SQL query to get user from db
-    user = db.query(UserScheme).filter(
-        UserScheme.username == sub).first()
-    return UserInDB(**user.__dict__)
+    user = db_executor.run_db_task(lambda db: db.query(UserScheme).filter(
+        UserScheme.name == sub).first())
+    return UserInDB(**user)
 
 
 # Get current user

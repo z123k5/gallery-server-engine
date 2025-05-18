@@ -1,2 +1,4 @@
 cert/
-
+node_modules/
+__pycache__/
+src/__pycache__/
