@@ -329,7 +329,7 @@ model = os.environ.get('MODEL', '')
 # base_url = os.environ.get('BASE_URL', '')
 llm = ChatDeepSeek(model_name=model, temperature='0.7')
 
-metaParserTemplateStr = """你是一个json解析器，专门解析对查找的照片的信息，你将输入的文本通过理解，若文本没有呈现出某个键的信息，请不要解析这个键，否则解析出键对应的值，并以纯文本(花括号开头结尾)形式输出，可选的键有：[date, loc, device]，date:查找照片的日期时间(以今天{date}为参照日期，请以给出的时间精确到年、月或者日，如果只精确到月，那开始日期1号，结束日期月末；如果只精确到年，那开始日期1月1号，结束日期到年末，格式为区间YYYY-MM-DD HH:MM:SS~YYYY-MM-DD HH:MM:SS，例如：1."15年到16年的照片"解析为"2015-01-01 00:00:00~2016-01-01 00:00:00"2."去年以前的照片"解析为"1949-10-01 00:00:00~{dateLastYear}"，3."小时候的照片"由于日期不明确，故不解析date键)，loc:查找照片的地点(例如：1.北京市, 2.武功山)，device:拍摄用的设备，必须是相机类(如：1.iPhone 13, 2.Nikon zf)，输出格式如下:
+metaParserTemplateStr = """你是一个json解析器，专门解析对查找的照片的信息，你将输入的文本通过理解，若文本没有呈现出某个键的信息，请不要解析这个键，否则解析出键对应的值，并以纯文本(花括号开头结尾)形式输出，可选的键有：[date, loc, device]，date:查找照片的日期时间(以今天{date}为参照日期，请以给出的时间精确到年、月或者日，如果只精确到月，那开始日期1号，结束日期月末；如果只精确到年，那开始日期1月1号，结束日期到年末，格式为区间YYYY-MM-DD HH:MM:SS~YYYY-MM-DD HH:MM:SS，例如：1."15年到16年的照片"解析为"2015-01-01 00:00:00~2016-01-01 00:00:00"2."去年以前的照片"解析为"1949-10-01 00:00:00~{dateLastYear}"，3."小时候的照片"由于日期不明确，故不解析date键)，loc:查找照片的地点(例如：1.北京市, 2.武功山)，device:拍摄用的设备，必须是相机类(如：1.iPhone 13, 2.Nikon zf)，如果输入没有关于主体或拍摄对象，请不要解析device，输出格式如下:
 {{date: "<date as you understand it>", loc: "<address as you understand it in china>", device: "<photo device as you understand it>",}}
 输入的文本是："{query}"
 """
@@ -338,7 +338,7 @@ tagParserTemplateStr = """你是一个json解析器，专门解析输入文本�
 输入的文本是："{query}"
 """
 
-promptParserTemplateStr = """你是一个提示词生成器，专门解析输入文本对应的提示词，若输入文本中含有敏感信息如"时间、地点、拍摄设备"的信息，请做过滤处理，然后输出一个过滤后的信息，不包含以上敏感信息的文本提示词，你不能输出其他无关信息。
+promptParserTemplateStr = """你是一个提示词生成器，专门解析输入文本对应的提示词，若输入文本中含有包括"时间、地点、拍摄设备"的信息，请做过滤处理，然后输出一个过滤后的信息，不包含以上信息的文本提示词，你不能输出其他无关信息。
 输入的文本是："{query}"
 """
 
@@ -751,40 +751,27 @@ async def engine_query_v3(
         filter_criteria.append(
             MediaMetadataScheme.exif_dev.like(f"%{meta_device}%"))
     try:
-        if rspv2["tags"]:
-            tagNames = rspv2["tags"]
-            # stmt = text("""
-            #     SELECT id
-            #     FROM classes
-            #     WHERE name IN :tagNames
-            #     AND user_id = :user_id
-            # """).bindparams(bindparam("tagNames", expanding=True))
+        # if rspv2["tags"]:
+        #     tagNames = rspv2["tags"]
 
-            # tagIdsQueryResult = db.execute(
-            #     stmt,
-            #     {"tagNames": tagNames, "user_id": current_user.id}
-            # ).all()
-            tagIdsQueryResult = db_executor.run_db_task(lambda db: db.query(ClassesScheme).filter(
-                ClassesScheme.name.in_(tagNames),
-                ClassesScheme.user_id == current_user.id
-            ).all())
+        #     tagIdsQueryResult = db_executor.run_db_task(lambda db: db.query(ClassesScheme).filter(
+        #         ClassesScheme.name.in_(tagNames),
+        #         ClassesScheme.user_id == current_user.id
+        #     ).all())
 
-            # tables: media, media_classes
-            # 构建子查询
-            subquery = (
-                select(MediaClassesScheme.media_id)
-                .where(MediaClassesScheme.class_id.in_([tag["id"] for tag in tagIdsQueryResult]))
-                .subquery()
-            )
+        #     # tables: media, media_classes
+        #     # 构建子查询
+        #     subquery = (
+        #         select(MediaClassesScheme.media_id)
+        #         .where(MediaClassesScheme.class_id.in_([tag["id"] for tag in tagIdsQueryResult]))
+        #         .subquery()
+        #     )
 
-            # 使用 select() 显式构造查询
-            filter_criteria.append(
-                MediaScheme.identifier.in_(select(subquery.c.media_id))
-            )
-        # query_result = db.query(MediaScheme).filter(
-        #     *filter_criteria,
-        #     MediaScheme.feature != None
-        # ).all()
+        #     # 使用 select() 显式构造查询
+        #     filter_criteria.append(
+        #         MediaScheme.identifier.in_(select(subquery.c.media_id))
+        #     )
+
         query_result = db_executor.run_db_task(lambda db: db.query(MediaScheme)
             .join(UserScheme, MediaScheme.user_id == UserScheme.id)  # 显式 JOIN users 表
             .options(joinedload(MediaScheme.media_metadata))
@@ -978,7 +965,8 @@ if __name__ == "__main__":
     logger.info("Loading Models...")
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     logger.info(f"Using device: {device}")
-    logger.info(f"Device: {torch.cuda.get_device_name(0)}")
+    if torch.cuda.is_available():
+        logger.info(f"Device: {torch.cuda.get_device_name(0)}")
     text_tokenizer = BertTokenizer.from_pretrained(
         "./Taiyi-CLIP-Roberta-large-326M-Chinese")
     text_encoder = BertForSequenceClassification.from_pretrained(

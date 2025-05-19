@@ -7,9 +7,9 @@ import uuid
 import queue
 from contextlib import contextmanager
 import os, sys
-sys.path.append("D:\Projects\IOSProjects\gallery-server-engine")
-sys.path.append("D:\Projects\IOSProjects\gallery-server-engine\src")
-from Logger import logger
+# sys.path.append("D:\Projects\IOSProjects\gallery-server-engine")
+# sys.path.append("D:\Projects\IOSProjects\gallery-server-engine\src")
+from .Logger import logger
 
 from datetime import datetime
 from typing import Generator
@@ -20,7 +20,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy.ext.declarative import declarative_base
 from fastapi import Depends
 
-SQLALCHEMY_DATABASE_URL = "sqlite:///D:/Projects/IOSProjects/gallery-server-engine/db/data.db"
+SQLALCHEMY_DATABASE_URL = "sqlite:///F:/Projects/gallery-server-engine/db/data.db"
 
 # 创建数据库引擎
 engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args={
